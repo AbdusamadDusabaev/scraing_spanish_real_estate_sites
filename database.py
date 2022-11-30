@@ -24,10 +24,11 @@ def database(query):
 
 
 def create_table():
-    query = f"""CREATE TABLE {table.lower()} (title VARCHAR(500),  object_type VARCHAR(10), price VARCHAR(50), 
-    square VARCHAR(50), bedrooms VARCHAR(50), bathes VARCHAR(50),  description VARCHAR(5000), url VARCHAR(500), 
-    image_url VARCHAR(500));"""
+    query = f"""CREATE TABLE {table.lower()} (transaction_type VARCHAR (10), title VARCHAR(500),  
+    object_type VARCHAR(10), price VARCHAR(50), square VARCHAR(50), bedrooms VARCHAR(50), bathes VARCHAR(50),  
+    description VARCHAR(5000), url VARCHAR(500), image_url VARCHAR(500));"""
     database(query=query)
+    print('[INFO] Таблица успешно создана')
 
 
 def delete_data():
@@ -39,9 +40,10 @@ def insert_data(objects):
     delete_data()
     for object_dict in objects:
         object_dict["description"] = object_dict["description"].replace('"', "'")
-        query = f"""INSERT INTO {table}(title, object_type, price, square, bedrooms, bathes, description, url, image_url)
-        VALUES ("{object_dict['title']}", "{object_dict['object_type']}", "{object_dict['price']}", 
-        "{object_dict['square']}", "{object_dict['bedrooms']}", "{object_dict['bathes']}", 
+        query = f"""INSERT INTO {table}(transaction_type, title, object_type, price, square, bedrooms, bathes, 
+                                        description, url, image_url)
+        VALUES ("{object_dict['mode']}", "{object_dict['title']}", "{object_dict['object_type']}", 
+        "{object_dict['price']}", "{object_dict['square']}", "{object_dict['bedrooms']}", "{object_dict['bathes']}", 
         "{object_dict['description']}", "{object_dict['url']}", "{object_dict['image_url']}");"""
         database(query=query)
 

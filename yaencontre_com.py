@@ -101,7 +101,7 @@ def get_links_from_site(start_url):
         return set(links)
 
 
-def get_info_from_page(url, object_type):
+def get_info_from_page(url, object_type, mode):
     response = get_response(url=url)
 
     if response:
@@ -144,8 +144,9 @@ def get_info_from_page(url, object_type):
             else:
                 image_url = image_url.img["src"]
 
-        result = {"title": title, "object_type": object_type, "price": price, "square": square, "bedrooms": bedrooms,
-                  "bathes": bathes, "description": description, "url": url, "image_url": image_url}
+        result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
+                  "square": square, "bedrooms": bedrooms, "bathes": bathes, "description": description,
+                  "url": url, "image_url": image_url}
 
         return result
 
@@ -164,6 +165,14 @@ def correct_url(url):
     return url
 
 
+def get_mode(url):
+    if "alquiler" in url:
+        mode = "rent"
+    else:
+        mode = "buy"
+    return mode
+
+
 def main():
     example = "https://www.yaencontre.com/alquiler/pisos/malaga/f-2-banos"
     text = 'Выберете город и укажите фильтры поиска на сайте www.yaencontre.com.'
@@ -172,12 +181,13 @@ def main():
     url = correct_url(url=url)
     print("[INFO] Программа запущена...")
     start_time = time.time()
+    mode = get_mode(url=url)
     object_type = get_object_type(url=url)
     result = list()
     links = get_links_from_site(start_url=url)
     for link in links:
         print(f"[INFO] Обрабатывается страница {link}")
-        sub_result = get_info_from_page(url=link, object_type=object_type)
+        sub_result = get_info_from_page(url=link, object_type=object_type, mode=mode)
         if sub_result is not None:
             print(f"[INFO] Получен объект: {sub_result}")
             result.append(sub_result)

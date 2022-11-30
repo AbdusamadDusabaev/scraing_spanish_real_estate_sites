@@ -88,9 +88,9 @@ def get_info_from_site(start_url, mode, object_type):
                             elif "m²" in characteristic.text.strip():
                                 square = characteristic.text.strip()
 
-                        sub_result = {"title": title, "object_type": object_type, "price": price, "square": square,
-                                      "bedrooms": bedrooms, "bathes": bathes, "description": description,
-                                      "url": link, "image_url": image_url}
+                        sub_result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
+                                      "square": square, "bedrooms": bedrooms, "bathes": bathes,
+                                      "description": description, "url": link, "image_url": image_url}
 
                         if mode == "rent":
                             logo = card.find(name="a", class_="re-CardPromotionLogo-link")

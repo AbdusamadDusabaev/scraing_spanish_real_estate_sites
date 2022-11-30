@@ -94,8 +94,8 @@ def get_info_from_site(start_url, object_type):
                 object_url = card.find(name="div", class_='propertyCard__description hidden-xs').a["href"]
                 description = card.find(name="p", class_='propertyCard__description--txt').text.strip()
 
-                data = {"title": title, "object_type": object_type, "price": price, "square": square,
-                        "bedrooms": bedrooms, "bathes": bathes, "description": description,
+                data = {"mode": "rent", "title": title, "object_type": object_type, "price": price,
+                        "square": square, "bedrooms": bedrooms, "bathes": bathes, "description": description,
                         "url": object_url, "image_url": image_url}
                 result.append(data)
                 print(data)

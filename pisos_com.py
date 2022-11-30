@@ -151,8 +151,8 @@ def get_data_from_object(object_url, object_type, mode):
                     bedrooms = characteristics[1].text.strip()
                     bathes = characteristics[2].text.strip()
 
-                result = {"title": title, "object_type": object_type, "price": price, "square": square,
-                          "bedrooms": bedrooms, "bathes": bathes, "description": description,
+                result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
+                          "square": square, "bedrooms": bedrooms, "bathes": bathes, "description": description,
                           "url": object_url, "image_url": image_url}
 
                 return result

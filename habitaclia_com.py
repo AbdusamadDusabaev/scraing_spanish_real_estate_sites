@@ -52,7 +52,7 @@ def get_response(url):
     return response
 
 
-def get_data_from_site(start_url, object_type):
+def get_data_from_site(start_url, object_type, mode):
     result = list()
     response = requests.get(url=start_url, headers=headers)
     bs_object = BeautifulSoup(response.content, "lxml")
@@ -96,8 +96,8 @@ def get_data_from_site(start_url, object_type):
                 bedrooms = "No information"
                 bathes = "No information"
 
-            sub_result = {"title": title, "object_type": object_type, "price": price, "square": square,
-                          "bedrooms": bedrooms, "bathes": bathes, "description": description,
+            sub_result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
+                          "square": square, "bedrooms": bedrooms, "bathes": bathes, "description": description,
                           "url": url, "image_url": image_url}
             result.append(sub_result)
             print(f"[INFO] Получен объект: {sub_result}")
@@ -122,7 +122,7 @@ def get_links_from_site(start_url):
     return set(links)
 
 
-def get_info_from_object(url, object_type):
+def get_info_from_object(url, object_type, mode):
     response = get_response(url=url)
     if response:
         bs_object = BeautifulSoup(response.content, "lxml")
@@ -151,9 +151,9 @@ def get_info_from_object(url, object_type):
             else:
                 image_url = image_url.find(name="img", class_="print-xl")["src"]
 
-            result = {"title": title, "object_type": object_type, "price": price, "square": square,
-                      "bedrooms": bedrooms, "bathes": bathes, "description": description,
-                      "url": url, "image_url": image_url}
+            result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
+                      "square": square, "bedrooms": bedrooms, "bathes": bathes,
+                      "description": description, "url": url, "image_url": image_url}
 
             return result
 
@@ -196,12 +196,12 @@ def main():
         links = get_links_from_site(start_url=url)
         for link in links:
             print(f"[INFO] Обрабатывается страница {link}")
-            sub_result = get_info_from_object(url=link, object_type=object_type)
+            sub_result = get_info_from_object(url=link, object_type=object_type, mode=mode)
             if sub_result is not None:
                 print(f"[INFO] Получен объект: {sub_result}")
                 result.append(sub_result)
     else:
-        result = get_data_from_site(start_url=url, object_type=object_type)
+        result = get_data_from_site(start_url=url, object_type=object_type, mode=mode)
     print(f"[INFO] Программа собрала {len(result)} объектов")
     print("[INFO] Идет запись в базу данных")
     insert_data(objects=result)

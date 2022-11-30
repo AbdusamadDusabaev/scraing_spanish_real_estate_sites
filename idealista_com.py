@@ -113,8 +113,8 @@ def get_info_from_object(browser, url, object_type, mode):
         elif "baños" in characteristic.text:
             bathes = characteristic.text.strip()
 
-    result = {"title": title, "object_type": object_type, "price": price, "square": square, "bedrooms": bedrooms,
-              "bathes": bathes, "description": description, "url": url, "image_url": image_url}
+    result = {"mode": mode, "title": title, "object_type": object_type, "price": price, "square": square,
+              "bedrooms": bedrooms, "bathes": bathes, "description": description, "url": url, "image_url": image_url}
     return result
 
 
