@@ -8,7 +8,7 @@ from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 import time
 import re
-from database import insert_data
+from database import insert_data, download_photo
 
 
 options = webdriver.ChromeOptions()
@@ -78,6 +78,8 @@ def get_info_from_site(start_url, mode, object_type):
                         price = card.h3.find(name="span", class_="re-CardPriceContainer").text.strip()
                         description = card.find(name="p", class_=description_class).text.strip()
 
+                        image_path = download_photo(url=image_url, title=title)
+
                         bedrooms, bathes, square = "No information", "No information", "No information"
                         characteristics = card.find(name="ul", class_=characteristics_class).find_all(name="li")
                         for characteristic in characteristics:
@@ -88,18 +90,22 @@ def get_info_from_site(start_url, mode, object_type):
                             elif "m²" in characteristic.text.strip():
                                 square = characteristic.text.strip()
 
-                        sub_result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
-                                      "square": square, "bedrooms": bedrooms, "bathes": bathes,
-                                      "description": description, "url": link, "image_url": image_url}
-
-                        if mode == "rent":
-                            logo = card.find(name="a", class_="re-CardPromotionLogo-link")
-                            if logo is None:
-                                result.append(sub_result)
-                                print(sub_result)
-                        else:
+                        logo = card.find(name="a", class_="re-CardPromotionLogo-link")
+                        if logo is None:
+                            sub_result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
+                                          "square": square, "bedrooms": bedrooms, "bathes": bathes,
+                                          "description": description, "url": link, "image_url": image_url,
+                                          "seller_type": "particular", "image_path": image_path}
                             result.append(sub_result)
                             print(sub_result)
+                        else:
+                            if mode == "buy":
+                                sub_result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
+                                              "square": square, "bedrooms": bedrooms, "bathes": bathes,
+                                              "description": description, "url": link, "image_url": image_url,
+                                              "seller_type": "agency", "image_path": image_path}
+                                result.append(sub_result)
+                                print(sub_result)
                     print(f"[INFO] Страница {url} обработана")
                 except AttributeError as ex:
                     print(ex)
@@ -134,11 +140,12 @@ def get_object_type(url):
     return object_type
 
 
-def main():
-    example = "https://www.fotocasa.es/es/alquiler/viviendas/malaga-provincia/todas-las-zonas/l?propertySubtypeIds=54"
-    text = "Выберете город и укажите фильтры поиска на сайте fotocasa.es."
-    input_text = f"{text} Вставьте полученный URL ({example}):\n[INPUT] >>>   "
-    url = input(input_text).strip()
+def main(url=None, without_delete=False):
+    if url is None:
+        example = "https://www.fotocasa.es/es/alquiler/viviendas/malaga-provincia/todas-las-zonas/l?propertySubtypeIds=54"
+        text = "Выберете город и укажите фильтры поиска на сайте fotocasa.es."
+        input_text = f"{text} Вставьте полученный URL ({example}):\n[INPUT] >>>   "
+        url = input(input_text).strip()
     start = time.time()
     print("[INFO] Программа запущена")
     mode = get_mode(url=url)
@@ -146,7 +153,7 @@ def main():
     result = get_info_from_site(start_url=url, mode=mode, object_type=object_type)
     print(f"[INFO] Программа собрала {len(result)} объектов")
     print("[INFO] Идет запись объектов в базу данных")
-    insert_data(objects=result)
+    insert_data(objects=result, without_delete=without_delete)
     stop = time.time()
     print(f"[INFO] Программа работала {stop - start} секунд")
 

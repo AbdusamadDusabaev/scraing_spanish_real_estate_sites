@@ -7,7 +7,7 @@ from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
-from database import insert_data
+from database import insert_data, download_photo
 
 
 options = webdriver.ChromeOptions()
@@ -91,12 +91,15 @@ def get_info_from_object(browser, url, object_type, mode):
     card = bs_object.find(name="main", class_="detail-container")
     if card is None:
         return False
+    title = card.find(name="div", class_="main-info__title").h1.text.strip()
     image_url = card.img
     if image_url is not None:
         image_url = image_url["src"]
+        image_path = download_photo(url=image_url, title=title)
     else:
         image_url = "No information"
-    title = card.find(name="div", class_="main-info__title").h1.text.strip()
+        print(f"[INFO] У объекта {title} нет фотографии")
+        image_path = ""
     price = card.find(name="span", class_='info-data-price').text.strip()
     description = card.find(name="div", class_='comment')
     if description is not None:
@@ -113,8 +116,16 @@ def get_info_from_object(browser, url, object_type, mode):
         elif "baños" in characteristic.text:
             bathes = characteristic.text.strip()
 
+    if mode == "rent":
+        seller_type = "particular"
+    elif "particular" in bs_object.text.lower():
+        seller_type = "particular"
+    else:
+        seller_type = "agency"
+
     result = {"mode": mode, "title": title, "object_type": object_type, "price": price, "square": square,
-              "bedrooms": bedrooms, "bathes": bathes, "description": description, "url": url, "image_url": image_url}
+              "bedrooms": bedrooms, "bathes": bathes, "description": description, "url": url, "image_url": image_url,
+              "seller_type": seller_type, "image_path": image_path}
     return result
 
 
@@ -164,13 +175,15 @@ def get_info_from_link(browser, link, mode, object_type):
         return False
 
 
-def main():
+def main(url=None, without_delete=False, proxy_server=None):
     result = list()
-    proxy_server = input('Введите прокси сервер в формате (127.0.0.1:8080): ')
+    if proxy_server is None:
+        proxy_server = input('Введите прокси сервер в формате (127.0.0.1:8080): ')
     example = "https://www.idealista.com/alquiler-viviendas/malaga-malaga/con-solo-pisos,aticos/"
     text = "Выберете город и укажите фильтры поиска на сайте idealista.com."
-    input_text = f"{text}\nВставьте полученный URL ({example}):\n[INPUT] >>>   "
-    url = input(input_text).strip()
+    if url is None:
+        input_text = f"{text}\nВставьте полученный URL ({example}):\n[INPUT] >>>   "
+        url = input(input_text).strip()
     print("[INFO] Не уходите далеко. Нужно будет еще пройти капчу")
     mode = get_mode(url=url)
     object_type = get_object_type(url=url)
@@ -190,7 +203,7 @@ def main():
 
         print(f"[INFO] Собрано {len(result)} объектов")
         print("[INFO] Идет запись в базу данных")
-        insert_data(objects=result)
+        insert_data(objects=result, without_delete=without_delete)
         stop_time = time.time()
         print(f"[INFO] На работу программы потребовалось {stop_time - start_time} секунд")
         print(f"[INFO] Количество ошибок сервера: {errors}")

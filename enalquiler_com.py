@@ -6,7 +6,7 @@ import requests
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
-from database import insert_data
+from database import insert_data, download_photo
 
 
 headers = {"user-agent": UserAgent().chrome}
@@ -93,10 +93,15 @@ def get_info_from_site(start_url, object_type):
                 title = card.find(name="div", class_='propertyCard__description hidden-xs').a.text.strip()
                 object_url = card.find(name="div", class_='propertyCard__description hidden-xs').a["href"]
                 description = card.find(name="p", class_='propertyCard__description--txt').text.strip()
-
+                if image_url != "No information":
+                    image_path = download_photo(url=image_url, title=title)
+                else:
+                    print(f"[INFO] У объекта {title} нет фотографии")
+                    image_path = ""
                 data = {"mode": "rent", "title": title, "object_type": object_type, "price": price,
                         "square": square, "bedrooms": bedrooms, "bathes": bathes, "description": description,
-                        "url": object_url, "image_url": image_url}
+                        "url": object_url, "image_url": image_url, "seller_type": "particular",
+                        "image_path": image_path}
                 result.append(data)
                 print(data)
 
@@ -113,17 +118,18 @@ def get_object_type(url):
     return object_type
 
 
-def main():
-    example = "https://www.enalquiler.com/search?tipo=2&query_string=Malaga"
-    text = "Выберете город и укажите фильтры поиска на сайте enalquiler.com."
-    input_text = f"{text} Вставьте полученный URL ({example}):\n[INPUT] >>>   "
-    url = input(input_text).strip()
+def main(url=None, without_delete=False):
+    if url is None:
+        example = "https://www.enalquiler.com/search?tipo=2&query_string=Malaga"
+        text = "Выберете город и укажите фильтры поиска на сайте enalquiler.com."
+        input_text = f"{text} Вставьте полученный URL ({example}):\n[INPUT] >>>   "
+        url = input(input_text).strip()
     object_type = get_object_type(url=url)
     start_time = time.time()
     result = get_info_from_site(start_url=url, object_type=object_type)
     print(f"[INFO] Программа собрала {len(result)} объектов")
     print("[INFO] Идет запись в базу данных")
-    insert_data(objects=result)
+    insert_data(objects=result, without_delete=without_delete)
     stop_time = time.time()
     print(f"[INFO] На работу программы потребовалось {stop_time - start_time} секунд")
     print(f"[INFO] Количество ошибок сервера: {errors}")

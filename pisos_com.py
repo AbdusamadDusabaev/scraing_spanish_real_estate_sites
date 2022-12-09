@@ -7,7 +7,7 @@ from requests.exceptions import ConnectTimeout, ConnectionError, ReadTimeout
 from bs4 import BeautifulSoup
 import time
 import re
-from database import insert_data
+from database import insert_data, download_photo
 
 
 domain = "https://www.pisos.com"
@@ -115,8 +115,8 @@ def get_data_from_object(object_url, object_type, mode):
     response = get_response(url=object_url)
     if response:
         bs_object = BeautifulSoup(response.content, "lxml")
+        logo = bs_object.find(name="img", class_="logo", title=True)
         if mode == "rent":
-            logo = bs_object.find(name="img", class_="logo", title=True)
             if logo is None:
                 check = True
             else:
@@ -134,26 +134,37 @@ def get_data_from_object(object_url, object_type, mode):
                 image_url = bs_object.find(name="img", id="mainPhotoPrint")
                 if image_url is None:
                     image_url = "No information"
+                    print(f"[INFO] У объекта {title} нет фотографии")
+                    image_path = ""
                 else:
-                    image_url = image_url["data-source"]
+                    image_url = image_url["data-source"].replace("https:https://", "https://")
+                    image_path = download_photo(url=image_url, title=title)
 
                 characteristics = bs_object.find_all(name="div", class_='basicdata-item')
-                if len(characteristics) == 0:
-                    square = "No information"
-                    bedrooms = "No information"
-                    bathes = "No information"
-                elif len(characteristics) < 3:
-                    square = characteristics[0].text.strip()
-                    bedrooms = "No information"
-                    bathes = "No information"
+                square = "No information"
+                bedrooms = "No information"
+                bathes = "No information"
+                for characteristic in characteristics[:3]:
+                    if "habs" in characteristic.text:
+                        bedrooms = characteristic.text
+                    elif "baños" in characteristic.text:
+                        bathes = characteristic.text
+                    elif "²" in characteristic.text:
+                        square = characteristic.text
+                    else:
+                        continue
+                if mode == "rent":
+                    seller_type = "particular"
                 else:
-                    square = characteristics[0].text.strip()
-                    bedrooms = characteristics[1].text.strip()
-                    bathes = characteristics[2].text.strip()
+                    if logo is None:
+                        seller_type = "particular"
+                    else:
+                        seller_type = "agency"
 
                 result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
                           "square": square, "bedrooms": bedrooms, "bathes": bathes, "description": description,
-                          "url": object_url, "image_url": image_url}
+                          "url": object_url, "image_url": image_url, "seller_type": seller_type,
+                          "image_path": image_path}
 
                 return result
 
@@ -180,13 +191,14 @@ def correct_url(url):
     return url
 
 
-def main():
+def main(url=None, without_delete=False):
     result = list()
-    example = "https://www.pisos.com/venta/duplexs-a_coruna/"
-    text = "Выберете город и укажите фильтры поиска на сайте pisos.com."
-    input_text = f"{text} Вставьте полученный URL ({example}):\n[INPUT] >>>   "
-    url = input(input_text).strip()
-    url = correct_url(url=url)
+    if url is None:
+        example = "https://www.pisos.com/venta/duplexs-a_coruna/"
+        text = "Выберете город и укажите фильтры поиска на сайте pisos.com."
+        input_text = f"{text} Вставьте полученный URL ({example}):\n[INPUT] >>>   "
+        url = input(input_text).strip()
+        url = correct_url(url=url)
     start_time = time.time()
     print("[INFO] Программа запущена")
     object_type = get_object_type(url=url)
@@ -200,7 +212,7 @@ def main():
             result.append(object_data)
     print(f"[INFO] Программа собрала {len(result)} объектов")
     print("[INFO] Идет запись в базу данных")
-    insert_data(objects=result)
+    insert_data(objects=result, without_delete=without_delete)
     stop_time = time.time()
     print(f"[INFO] На работу программы потребовалось {stop_time - start_time} секунд")
     print(f"[INFO] Количество ошибок сервера: {errors}")

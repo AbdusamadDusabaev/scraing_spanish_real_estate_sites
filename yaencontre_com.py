@@ -7,7 +7,7 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 import json
-from database import insert_data
+from database import insert_data, download_photo
 
 
 domain = "https://www.yaencontre.com"
@@ -101,7 +101,7 @@ def get_links_from_site(start_url):
         return set(links)
 
 
-def get_info_from_page(url, object_type, mode):
+def get_info_from_page(url, object_type, mode, seller_type):
     response = get_response(url=url)
 
     if response:
@@ -137,16 +137,21 @@ def get_info_from_page(url, object_type, mode):
         image_url = bs_object.find(name="div", class_='gallery__panel no-image-placeholder')
         if image_url is None:
             image_url = "No information"
+            print(f"[INFO] У объекта {title} нет фотографии")
+            image_path = ""
         else:
             image_url = image_url.picture
             if image_url is None:
                 image_url = "No information"
+                print(f"[INFO] У объекта {title} нет фотографии")
+                image_path = ""
             else:
                 image_url = image_url.img["src"]
+                image_path = download_photo(url=image_url, title=title)
 
         result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
                   "square": square, "bedrooms": bedrooms, "bathes": bathes, "description": description,
-                  "url": url, "image_url": image_url}
+                  "url": url, "image_url": image_url, "seller_type": seller_type, "image_path": image_path}
 
         return result
 
@@ -173,27 +178,37 @@ def get_mode(url):
     return mode
 
 
-def main():
-    example = "https://www.yaencontre.com/alquiler/pisos/malaga/f-2-banos"
-    text = 'Выберете город и укажите фильтры поиска на сайте www.yaencontre.com.'
-    input_text = f"{text}\nВставьте полученный URL ({example}):\n[INPUT] >>>   "
-    url = input(input_text).strip()
-    url = correct_url(url=url)
+def get_seller_type(url):
+    if "particular" in url:
+        seller_type = "particular"
+    else:
+        seller_type = "agency"
+    return seller_type
+
+
+def main(url=None, without_delete=False):
+    if url is None:
+        example = "https://www.yaencontre.com/alquiler/pisos/malaga/f-2-banos"
+        text = 'Выберете город и укажите фильтры поиска на сайте www.yaencontre.com.'
+        input_text = f"{text}\nВставьте полученный URL ({example}):\n[INPUT] >>>   "
+        url = input(input_text).strip()
+        url = correct_url(url=url)
     print("[INFO] Программа запущена...")
     start_time = time.time()
     mode = get_mode(url=url)
     object_type = get_object_type(url=url)
+    seller_type = get_seller_type(url=url)
     result = list()
     links = get_links_from_site(start_url=url)
     for link in links:
         print(f"[INFO] Обрабатывается страница {link}")
-        sub_result = get_info_from_page(url=link, object_type=object_type, mode=mode)
+        sub_result = get_info_from_page(url=link, object_type=object_type, mode=mode, seller_type=seller_type)
         if sub_result is not None:
             print(f"[INFO] Получен объект: {sub_result}")
             result.append(sub_result)
     print(f"[INFO] Программа собрала {len(result)} объектов")
     print("[INFO] Идет запись в базу данных")
-    insert_data(objects=result)
+    insert_data(objects=result, without_delete=without_delete)
     stop_time = time.time()
     print(f"[INFO] На работу программы потребовалось {stop_time - start_time} секунд")
     print(f"[INFO] Количество ошибок сервера: {errors}")

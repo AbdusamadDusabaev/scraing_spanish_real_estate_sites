@@ -7,7 +7,7 @@ import requests
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
-from database import insert_data
+from database import insert_data, download_photo
 
 
 headers = {"user-agent": UserAgent().chrome}
@@ -71,6 +71,9 @@ def get_data_from_site(start_url, object_type, mode):
             link = card.h3.a["href"]
             image_url = "https:" + card.find(name="div", class_="image").img["src"]
             description = card.find(name="p", class_="list-item-description").text.strip()
+            logo = card.find(name="a", class_="list-item-logo")
+
+            image_path = download_photo(url=image_url, title=title)
 
             price = card.find(name="span", itemprop="price")
             if price is not None:
@@ -96,9 +99,13 @@ def get_data_from_site(start_url, object_type, mode):
                 bedrooms = "No information"
                 bathes = "No information"
 
+            if logo is None:
+                seller_type = "particular"
+            else:
+                seller_type = "agency"
             sub_result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
                           "square": square, "bedrooms": bedrooms, "bathes": bathes, "description": description,
-                          "url": url, "image_url": image_url}
+                          "url": link, "image_url": image_url, "seller_type": seller_type, "image_path": image_path}
             result.append(sub_result)
             print(f"[INFO] Получен объект: {sub_result}")
     return result
@@ -148,12 +155,16 @@ def get_info_from_object(url, object_type, mode):
             image_url = bs_object.find(name="div", id="js-cover-less")
             if image_url is None:
                 image_url = "No information"
+                print(f"[INFO] У объекта {title} нет фотографии")
+                image_path = ""
             else:
                 image_url = image_url.find(name="img", class_="print-xl")["src"]
+                image_path = download_photo(url=image_url, title=title)
 
             result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
                       "square": square, "bedrooms": bedrooms, "bathes": bathes,
-                      "description": description, "url": url, "image_url": image_url}
+                      "description": description, "url": url, "image_url": image_url, "seller_type": "particular",
+                      "image_path": image_path}
 
             return result
 
@@ -180,12 +191,13 @@ def correct_url(url):
     return url
 
 
-def main():
-    example = "https://www.habitaclia.com/pisos-en-alt_penedes.htm"
-    text = "Выберете город и укажите фильтры поиска на сайте habitaclia.com."
-    input_text = f"{text} Вставьте полученный URL ({example}):\n[INPUT] >>>   "
-    url = input(input_text).strip()
-    url = correct_url(url=url)
+def main(url=None, without_delete=False):
+    if url is None:
+        example = "https://www.habitaclia.com/pisos-en-alt_penedes.htm"
+        text = "Выберете город и укажите фильтры поиска на сайте habitaclia.com."
+        input_text = f"{text} Вставьте полученный URL ({example}):\n[INPUT] >>>   "
+        url = input(input_text).strip()
+        url = correct_url(url=url)
     start_time = time.time()
     print("[INFO] Программа запущена")
     object_type = get_object_type(url)
@@ -204,7 +216,7 @@ def main():
         result = get_data_from_site(start_url=url, object_type=object_type, mode=mode)
     print(f"[INFO] Программа собрала {len(result)} объектов")
     print("[INFO] Идет запись в базу данных")
-    insert_data(objects=result)
+    insert_data(objects=result, without_delete=without_delete)
     stop_time = time.time()
     print(f"[INFO] На работу программы потребовалось {stop_time - start_time} секунд")
     print(f"[INFO] Количество ошибок сервера: {errors}")
