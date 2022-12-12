@@ -44,6 +44,14 @@ def main():
         mode = input(f"[INPUT] Выберете режим работы программы {mode_text}: >>> ")
 
         if mode == "1":
+            while True:
+                without_delete = input("[INPUT] Выберете режим очистки данных (1 - не очищать, 0 - очистить): >>> ")
+                if int(without_delete) == 1 or int(without_delete) == 0:
+                    break
+            if int(without_delete) == 1:
+                without_delete = True
+            else:
+                without_delete = False
             print("[INFO] Выберете, какой парсер вы хотите запустить")
             print("\n".join(variants))
             while True:
@@ -56,14 +64,16 @@ def main():
                     print("[INFO] Если вам нужно спарсить ссылки на сайт idealista.com, используйте 4 парсер напрямую")
                     go_command = input("Начинаем парсинг по часто используемым? (y/n): >>> ")
                     if go_command == "y":
-                        delete_data()
-                        clean_photos()
+                        if not without_delete:
+                            delete_data()
+                            clean_photos()
                         parsing_urls()
                 else:
-                    delete_data()
-                    clean_photos()
+                    if not without_delete:
+                        delete_data()
+                        clean_photos()
                     variant = int(variant)
-                    parsers[variant]()
+                    parsers[variant](without_delete=without_delete)
                     break
             break
         elif mode == "2":

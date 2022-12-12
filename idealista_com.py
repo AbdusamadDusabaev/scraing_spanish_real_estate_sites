@@ -175,38 +175,42 @@ def get_info_from_link(browser, link, mode, object_type):
         return False
 
 
-def main(url=None, without_delete=False, proxy_server=None):
+def main(without_delete=False):
     result = list()
-    if proxy_server is None:
-        proxy_server = input('Введите прокси сервер в формате (127.0.0.1:8080): ')
+    proxy_server = input('Введите прокси сервер в формате (127.0.0.1:8080): ')
     example = "https://www.idealista.com/alquiler-viviendas/malaga-malaga/con-solo-pisos,aticos/"
     text = "Выберете город и укажите фильтры поиска на сайте idealista.com."
-    if url is None:
-        input_text = f"{text}\nВставьте полученный URL ({example}):\n[INPUT] >>>   "
-        url = input(input_text).strip()
+    input_text = f"{text}\nВставьте полученные URL через запятую, если их несколько ({example}):\n[INPUT] >>>   "
+    urls = input(input_text).strip()
+    urls = urls.split(", ")
+    urls = [url.strip() for url in urls]
     print("[INFO] Не уходите далеко. Нужно будет еще пройти капчу")
-    mode = get_mode(url=url)
-    object_type = get_object_type(url=url)
     options.add_argument(f"--proxy-server={proxy_server}")
     browser = webdriver.Chrome(options=options)
     browser.set_page_load_timeout(timeout)
+    index = 0
     try:
-        browser.get(url=url)
-        print("[INFO] Пройдите капчу и введите YES")
-        input("[INPUT] >>>   ")
-        start_time = time.time()
-        links = get_link_from_site(browser=browser, start_url=url, mode=mode)
-        for link in links:
-            sub_result = get_info_from_link(browser=browser, link=link, mode=mode, object_type=object_type)
-            if sub_result:
-                result.append(sub_result)
+        for url in urls:
+            index += 1
+            mode = get_mode(url=url)
+            object_type = get_object_type(url=url)
+            browser.get(url=url)
+            if index == 1:
+                print("[INFO] Пройдите капчу и введите YES")
+                input("[INPUT] >>>   ")
+            start_time = time.time()
+            links = get_link_from_site(browser=browser, start_url=url, mode=mode)
+            for link in links:
+                sub_result = get_info_from_link(browser=browser, link=link, mode=mode, object_type=object_type)
+                if sub_result:
+                    result.append(sub_result)
 
-        print(f"[INFO] Собрано {len(result)} объектов")
-        print("[INFO] Идет запись в базу данных")
-        insert_data(objects=result, without_delete=without_delete)
-        stop_time = time.time()
-        print(f"[INFO] На работу программы потребовалось {stop_time - start_time} секунд")
-        print(f"[INFO] Количество ошибок сервера: {errors}")
+            print(f"[INFO] Собрано {len(result)} объектов")
+            print("[INFO] Идет запись в базу данных")
+            insert_data(objects=result, without_delete=without_delete)
+            stop_time = time.time()
+            print(f"[INFO] На работу программы потребовалось {stop_time - start_time} секунд")
+            print(f"[INFO] Количество ошибок сервера: {errors}")
     finally:
         browser.close()
         browser.quit()

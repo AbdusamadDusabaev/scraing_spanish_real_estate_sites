@@ -141,7 +141,6 @@ def download_photo(url, title):
     with open(path, "wb") as file:
         file.write(response.content)
     print(f"[INFO] Фотография объекта {title} успешно загружена")
-    correct_path = str(path)
     return f"{correct_title}.jpg"
 
 
@@ -169,7 +168,7 @@ def database(query, object_name=None):
 
 
 def get_urls():
-    query = f"""SELECT * FROM {table_urls};"""
+    query = f"""SELECT * FROM {table_urls} WHERE active = 1;"""
     result = database(query=query)
     return result
 
@@ -178,14 +177,14 @@ def create_table_objects():
     query = f"""CREATE TABLE {table_objects.lower()} (favorite INT, transaction_type INT, 
     seller_type INT, title VARCHAR(500), object_type INT, price VARCHAR(50), square VARCHAR(50), 
     bedrooms VARCHAR(50), bathes VARCHAR(50), description VARCHAR(5000), url VARCHAR(500) UNIQUE, 
-    image_url VARCHAR(500), image_path VARCHAR(500));"""
+    image_url VARCHAR(500), image_title VARCHAR(500));"""
     database(query=query)
     print('[INFO] Таблица объектов недвижимости успешно создана')
 
 
 def create_table_urls():
     query = f"""CREATE TABLE {table_urls.lower()} (url VARCHAR(500) UNIQUE, transaction_type INT, 
-                                                   seller_type INT, object_type INT);"""
+                                                   seller_type INT, object_type INT, active INT);"""
     database(query=query)
     print("[INFO] Таблица url-адресов успешно создана")
 
@@ -202,6 +201,7 @@ def get_favorite_photos():
 def delete_data():
     query = f"""DELETE FROM {table_objects.lower()} WHERE favorite = 0;"""
     database(query=query)
+    print("[INFO] База данных очищена")
 
 
 def record_urls():
@@ -215,8 +215,9 @@ def record_urls():
             transaction_type = get_transaction_type(url=url)
             seller_type = get_seller_type(url=url)
             object_type = get_object_type(url=url)
-            query = f"""INSERT INTO {table_urls.lower()}(url, transaction_type, seller_type, object_type)
-                        VALUES({url}, {transaction_type}, {seller_type}, {object_type});"""
+            active = 1
+            query = f"""INSERT INTO {table_urls.lower()}(url, transaction_type, seller_type, object_type, active)
+                        VALUES({url}, {transaction_type}, {seller_type}, {object_type}, {active});"""
             database(query=query, object_name=url)
     print("[INFO] Запись url-адресов успешно завершена")
 
@@ -249,7 +250,6 @@ def insert_data(objects, without_delete):
 
 
 if __name__ == "__main__":
-    # create_table_objects()
-    # create_table_urls()
-    print(f"Избранных товаров {len(get_favorite_photos())}")
-    clean_photos()
+    create_table_objects()
+    create_table_urls()
+    create_photo_dir()
