@@ -131,6 +131,8 @@ def get_transaction_type(url):
 
 def download_photo(url, title):
     url = url.replace("https:https://", "https://")
+    if url.startswith("//"):
+        url = f"https:{url}"
     correct_title = list()
     for symbol in title:
         if symbol.isalnum() or symbol == "-" or symbol == " ":
