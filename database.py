@@ -178,7 +178,7 @@ def get_urls():
 def create_table_objects():
     query = f"""CREATE TABLE {table_objects.lower()} (favorite INT, transaction_type INT, 
     seller_type INT, title VARCHAR(500), object_type INT, price VARCHAR(50), square VARCHAR(50), 
-    bedrooms VARCHAR(50), bathes VARCHAR(50), description VARCHAR(5000), url VARCHAR(500) UNIQUE, 
+    bedrooms VARCHAR(50), bathes VARCHAR(50), description TEXT, url VARCHAR(500) UNIQUE, 
     image_url VARCHAR(500), image_title VARCHAR(500));"""
     database(query=query)
     print('[INFO] Таблица объектов недвижимости успешно создана')

@@ -15,7 +15,7 @@ options = webdriver.ChromeOptions()
 options.add_argument(f"user-agent={UserAgent().chrome}")
 options.add_argument("--headless")
 
-timeout = 60
+timeout = 300
 domain = "https://www.fotocasa.es"
 card_class = re.compile(r"^re-CardPack.*")
 title_class = re.compile(r"^re-CardTitle.*")
@@ -23,24 +23,29 @@ description_class = re.compile(r"^re-CardDescription.*")
 characteristics_class = re.compile(r"^re-CardFeatures.*")
 
 
-def get_response_from_catalog_page(browser, url):
-    for _ in range(5):
-        try:
-            browser.get(url)
-            start = 0
-            stop = 1080
-            for scroll in range(20):
-                browser.execute_script(f"window.scrollTo({start}, {stop})")
-                time.sleep(0.1)
-                start += 1080
-                stop += 1080
-            browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            response = browser.page_source
-            if response and len(response) > 0:
-                return response
-        except TimeoutException:
-            continue
-    return None
+def get_response_from_catalog_page(url):
+    browser = webdriver.Chrome(options=options)
+    try:
+        for _ in range(5):
+            try:
+                browser.get(url)
+                start = 0
+                stop = 1080
+                for scroll in range(20):
+                    browser.execute_script(f"window.scrollTo({start}, {stop})")
+                    time.sleep(0.1)
+                    start += 1080
+                    stop += 1080
+                browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                response = browser.page_source
+                if response and len(response) > 0:
+                    return response
+            except TimeoutException:
+                continue
+        return None
+    finally:
+        browser.close()
+        browser.quit()
 
 
 def get_info_from_site(start_url, mode, object_type):
@@ -66,7 +71,7 @@ def get_info_from_site(start_url, mode, object_type):
                 else:
                     url = f"{start_url}/{page}"
             page += 1
-            response = get_response_from_catalog_page(browser=browser, url=url)
+            response = get_response_from_catalog_page(url=url)
             if response is not None:
                 try:
                     bs_object = BeautifulSoup(response, "lxml")
@@ -77,8 +82,6 @@ def get_info_from_site(start_url, mode, object_type):
                         title = card.h3.find(name="span", class_=title_class).text.strip()
                         price = card.h3.find(name="span", class_="re-CardPriceContainer").text.strip()
                         description = card.find(name="p", class_=description_class).text.strip()
-
-                        image_path = download_photo(url=image_url, title=title)
 
                         bedrooms, bathes, square = "No information", "No information", "No information"
                         characteristics = card.find(name="ul", class_=characteristics_class).find_all(name="li")
@@ -92,6 +95,7 @@ def get_info_from_site(start_url, mode, object_type):
 
                         logo = card.find(name="a", class_="re-CardPromotionLogo-link")
                         if logo is None:
+                            image_path = download_photo(url=image_url, title=title)
                             sub_result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
                                           "square": square, "bedrooms": bedrooms, "bathes": bathes,
                                           "description": description, "url": link, "image_url": image_url,
@@ -100,6 +104,7 @@ def get_info_from_site(start_url, mode, object_type):
                             print(sub_result)
                         else:
                             if mode == "buy":
+                                image_path = download_photo(url=image_url, title=title)
                                 sub_result = {"mode": mode, "title": title, "object_type": object_type, "price": price,
                                               "square": square, "bedrooms": bedrooms, "bathes": bathes,
                                               "description": description, "url": link, "image_url": image_url,

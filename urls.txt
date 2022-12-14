@@ -1,6 +1,5 @@
+https://www.pisos.com/alquiler/pisos-estepona/
+https://www.habitaclia.com/alquiler-estepona.htm
 https://www.fotocasa.es/es/alquiler/viviendas/estepona/estepona-pueblo/l
-https://www.pisos.com/venta/duplexs-a_coruna/
-https://www.habitaclia.com/pisos-en-alt_penedes.htm
-https://www.fotocasa.es/es/alquiler/viviendas/malaga-provincia/todas-las-zonas/l?propertySubtypeIds=54
-https://www.enalquiler.com/search?tipo=2&query_string=Malaga
-https://www.yaencontre.com/alquiler/pisos/malaga/e-particulares
+https://www.enalquiler.com/search?provincia=31&poblacion=19098
+https://www.yaencontre.com/alquiler/pisos/estepona
