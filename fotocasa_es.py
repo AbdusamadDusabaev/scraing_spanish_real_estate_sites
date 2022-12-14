@@ -118,6 +118,8 @@ def get_info_from_site(start_url, mode, object_type):
             if element not in correct_result:
                 correct_result.append(element)
         return correct_result
+    except IndexError:
+        return get_info_from_site(start_url, mode, object_type)
     finally:
         browser.close()
         browser.quit()

@@ -192,11 +192,11 @@ def create_table_urls():
 
 
 def get_favorite_photos():
-    query = f"SElECT image_path FROM {table_objects} WHERE favorite = 1;"
+    query = f"SElECT image_title FROM {table_objects} WHERE favorite = 1;"
     records = database(query=query)
     result = list()
     for record in records:
-        result.append(record["image_path"])
+        result.append(record["image_title"])
     return result
 
 
